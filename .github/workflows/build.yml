@@ -17,7 +17,7 @@ jobs:
         id: get_version
         run: |
           echo "Fetching the latest code-server release from GitHub..."
-          RAW_VERSION=$(curl --silent https://api.github.com/repos/cdr/code-server/releases/latest | jq -r .tag_name)
+          RAW_VERSION=$(curl --silent https://api.github.com/repositories/172953845/releases/latest | jq -r .tag_name)
           # Remove the leading "v" if present
           VERSION=$(echo $RAW_VERSION | sed 's/^v//')
           echo "Latest code-server version after stripping 'v': $VERSION"
