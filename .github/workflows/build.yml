@@ -17,7 +17,7 @@ jobs:
         id: get_version
         run: |
           echo "Fetching the latest code-server release from GitHub..."
-          LATEST=$(curl --silent https://api.github.com/repos/cdr/code-server/releases/latest | jq -r .tag_name)
+          LATEST=$(curl --silent https://api.github.com/repositories/172953845/releases/latest | jq -r .tag_name)
           echo "Latest code-server version: $LATEST"
           echo "version=$LATEST" >> $GITHUB_OUTPUT
 
