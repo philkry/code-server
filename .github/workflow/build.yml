@@ -1,0 +1,38 @@
+name: Build and Publish Docker Image to GHCR
+
+on:
+  schedule:
+    # Schedule the workflow to run daily at midnight UTC.
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Get latest code-server version
+        id: get_version
+        run: |
+          echo "Fetching the latest code-server release from GitHub..."
+          LATEST=$(curl --silent https://api.github.com/repos/cdr/code-server/releases/latest | jq -r .tag_name)
+          echo "Latest code-server version: $LATEST"
+          echo "version=$LATEST" >> $GITHUB_OUTPUT
+
+      - name: Log in to GitHub Container Registry (GHCR)
+        run: |
+          echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Build Docker image
+        run: |
+          IMAGE_NAME=ghcr.io/${{ github.repository_owner }}/code-server:${{ steps.get_version.outputs.version }}
+          echo "Building Docker image with code-server version ${{ steps.get_version.outputs.version }}..."
+          docker build --build-arg CODE_SERVER_VERSION=${{ steps.get_version.outputs.version }} -t $IMAGE_NAME .
+
+      - name: Push Docker image to GHCR
+        run: |
+          IMAGE_NAME=ghcr.io/${{ github.repository_owner }}/code-server:${{ steps.get_version.outputs.version }}
+          echo "Pushing Docker image $IMAGE_NAME to GHCR..."
+          docker push $IMAGE_NAME
