@@ -27,11 +27,11 @@ RUN sudo install -m 0755 -d /etc/apt/keyrings && \
 RUN sudo apt-get clean && \
     sudo rm -rf /var/lib/apt/lists/*
 
-# Create Docker socket directory in case it doesn't exist
-RUN sudo mkdir -p /var/run/docker
+# Create startup script to run both Docker daemon and code-server
+COPY --chmod=755 start.sh /usr/local/bin/start.sh
 
 # Expose the default code-server port
 EXPOSE 8080
 
-# Start code-server with dumb-init (which is part of the base image)
-ENTRYPOINT ["dumb-init", "code-server", "--bind-addr", "0.0.0.0:8080"]
+# Use our startup script with dumb-init
+ENTRYPOINT ["dumb-init", "/usr/local/bin/start.sh"]
