@@ -15,13 +15,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Get base image version
+      - name: Pull the base image
+        run: docker pull codercom/code-server:latest
+
+      - name: Extract code-server version from the base image
         id: get_version
         run: |
-          echo "Fetching the base image version..."
-          BASE_IMAGE_VERSION=$(curl --silent https://registry.hub.docker.com/v2/repositories/codercom/code-server/tags/latest | jq -r '.name')
-          echo "Base image version: $BASE_IMAGE_VERSION"
-          echo "version=$BASE_IMAGE_VERSION" >> $GITHUB_OUTPUT
+          echo "Extracting the actual code-server version from the base image..."
+          VERSION=$(docker run --rm codercom/code-server:latest code-server --version | head -n 1 | awk '{print $1}')
+          echo "Extracted version: $VERSION"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Log in to GitHub Container Registry (GHCR)
         run: |
@@ -31,10 +34,15 @@ jobs:
         run: |
           IMAGE_NAME=ghcr.io/${{ github.repository_owner }}/code-server:${{ steps.get_version.outputs.version }}
           echo "Building Docker image with base image version ${{ steps.get_version.outputs.version }}..."
-          docker build --build-arg BASE_IMAGE_VERSION=${{ steps.get_version.outputs.version }} -t $IMAGE_NAME .
+          docker build -t $IMAGE_NAME .
+          # Also create a latest tag
+          docker tag $IMAGE_NAME ghcr.io/${{ github.repository_owner }}/code-server:latest
 
       - name: Push Docker image to GHCR
         run: |
-          IMAGE_NAME=ghcr.io/${{ github.repository_owner }}/code-server:${{ steps.get_version.outputs.version }}
-          echo "Pushing Docker image $IMAGE_NAME to GHCR..."
-          docker push $IMAGE_NAME
+          # Push versioned tag
+          echo "Pushing Docker image with version ${{ steps.get_version.outputs.version }} to GHCR..."
+          docker push ghcr.io/${{ github.repository_owner }}/code-server:${{ steps.get_version.outputs.version }}
+          # Push latest tag
+          echo "Pushing Docker image with tag latest to GHCR..."
+          docker push ghcr.io/${{ github.repository_owner }}/code-server:latest
