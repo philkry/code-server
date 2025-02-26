@@ -5,6 +5,8 @@ on:
     # Schedule the workflow to run daily at midnight UTC.
     - cron: '0 0 * * *'
   workflow_dispatch:
+  registry_package:
+    types: [published]
 
 jobs:
   build:
@@ -13,15 +15,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Get latest code-server version and remove leading "v"
+      - name: Get base image version
         id: get_version
         run: |
-          echo "Fetching the latest code-server release from GitHub..."
-          RAW_VERSION=$(curl --silent https://api.github.com/repositories/172953845/releases/latest | jq -r .tag_name)
-          # Remove the leading "v" if present
-          VERSION=$(echo $RAW_VERSION | sed 's/^v//')
-          echo "Latest code-server version after stripping 'v': $VERSION"
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Fetching the base image version..."
+          BASE_IMAGE_VERSION=$(curl --silent https://registry.hub.docker.com/v2/repositories/codercom/code-server/tags/latest | jq -r '.name')
+          echo "Base image version: $BASE_IMAGE_VERSION"
+          echo "version=$BASE_IMAGE_VERSION" >> $GITHUB_OUTPUT
 
       - name: Log in to GitHub Container Registry (GHCR)
         run: |
@@ -30,8 +30,8 @@ jobs:
       - name: Build Docker image
         run: |
           IMAGE_NAME=ghcr.io/${{ github.repository_owner }}/code-server:${{ steps.get_version.outputs.version }}
-          echo "Building Docker image with code-server version ${{ steps.get_version.outputs.version }}..."
-          docker build --build-arg CODE_SERVER_VERSION=${{ steps.get_version.outputs.version }} -t $IMAGE_NAME .
+          echo "Building Docker image with base image version ${{ steps.get_version.outputs.version }}..."
+          docker build --build-arg BASE_IMAGE_VERSION=${{ steps.get_version.outputs.version }} -t $IMAGE_NAME .
 
       - name: Push Docker image to GHCR
         run: |
