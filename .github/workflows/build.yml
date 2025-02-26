@@ -28,7 +28,7 @@ jobs:
           # If the above doesn't work, try an alternative approach
           if [ -z "$VERSION" ]; then
             echo "First extraction method failed, trying alternative approach..."
-            VERSION=$(docker run --rm codercom/code-server:latest bash -c "dpkg-query --show --showformat='\${Version}' code-server || echo unknown")
+            #VERSION=$(docker run --rm codercom/code-server:latest bash -c "dpkg-query --show --showformat='\${Version}' code-server || echo unknown")
           fi
           
           # If still empty, extract from Docker image label
