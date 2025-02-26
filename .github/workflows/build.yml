@@ -15,54 +15,18 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Pull the base image
-        run: docker pull codercom/code-server:latest
-
-      - name: Extract code-server version from the base image
-        id: get_version
-        run: |
-          echo "Extracting the actual code-server version from the base image..."
-          # Use grep to find the line containing the version and extract just the version number
-          VERSION=$(docker run --rm codercom/code-server:latest code-server --version | grep -o -E 'code-server [0-9]+\.[0-9]+\.[0-9]+(-[a-z]+)?' | awk '{print $2}')
-          
-          # If the above doesn't work, try an alternative approach
-          if [ -z "$VERSION" ]; then
-            echo "First extraction method failed, trying alternative approach..."
-            #VERSION=$(docker run --rm codercom/code-server:latest bash -c "dpkg-query --show --showformat='\${Version}' code-server || echo unknown")
-          fi
-          
-          # If still empty, extract from Docker image label
-          if [ -z "$VERSION" ] || [ "$VERSION" == "unknown" ]; then
-            echo "Second extraction method failed, trying Docker image label..."
-            VERSION=$(docker inspect codercom/code-server:latest | grep -o -E '"org.opencontainers.image.version":"[^"]+"' | cut -d':' -f2 | tr -d '"')
-          fi
-          
-          # If still empty, use today's date as a fallback
-          if [ -z "$VERSION" ] || [ "$VERSION" == "unknown" ]; then
-            echo "All extraction methods failed, using today's date as version..."
-            VERSION=$(date +"%Y.%m.%d")
-          fi
-          
-          echo "Extracted version: $VERSION"
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-
       - name: Log in to GitHub Container Registry (GHCR)
         run: |
           echo ${{ secrets.GHCR_PAT }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
       - name: Build Docker image
         run: |
-          IMAGE_NAME=ghcr.io/${{ github.repository_owner }}/code-server:${{ steps.get_version.outputs.version }}
-          echo "Building Docker image with base image version ${{ steps.get_version.outputs.version }}..."
+          IMAGE_NAME=ghcr.io/${{ github.repository_owner }}/code-server:latest
+          echo "Building Docker image..."
           docker build -t $IMAGE_NAME .
-          # Also create a latest tag
-          docker tag $IMAGE_NAME ghcr.io/${{ github.repository_owner }}/code-server:latest
 
       - name: Push Docker image to GHCR
         run: |
-          # Push versioned tag
-          echo "Pushing Docker image with version ${{ steps.get_version.outputs.version }} to GHCR..."
-          docker push ghcr.io/${{ github.repository_owner }}/code-server:${{ steps.get_version.outputs.version }}
-          # Push latest tag
-          echo "Pushing Docker image with tag latest to GHCR..."
-          docker push ghcr.io/${{ github.repository_owner }}/code-server:latest
+          IMAGE_NAME=ghcr.io/${{ github.repository_owner }}/code-server:latest
+          echo "Pushing Docker image $IMAGE_NAME to GHCR..."
+          docker push $IMAGE_NAME
