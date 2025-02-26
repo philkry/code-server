@@ -4,9 +4,9 @@
 LOG_DIR="$HOME/docker_logs"
 mkdir -p "$LOG_DIR"
 
-# Start Docker daemon in the background
+# Start Docker daemon in the background with proper group settings
 echo "Starting Docker daemon..."
-sudo dockerd > "$LOG_DIR/dockerd.log" 2>&1 &
+sudo dockerd -G docker > "$LOG_DIR/dockerd.log" 2>&1 &
 
 # Wait for Docker to start
 echo "Waiting for Docker daemon to start..."
@@ -20,6 +20,15 @@ while ! sudo docker info >/dev/null 2>&1; do
   fi
   sleep 1
 done
+
+# Make sure Docker socket has the right permissions
+echo "Setting Docker socket permissions..."
+if [ -e /var/run/docker.sock ]; then
+    sudo chmod 666 /var/run/docker.sock
+else
+    echo "Warning: Docker socket not found at expected location"
+fi
+
 echo "Docker daemon started successfully"
 
 # Start code-server with the arguments passed to this script
