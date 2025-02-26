@@ -23,13 +23,19 @@ RUN sudo install -m 0755 -d /etc/apt/keyrings && \
     sudo apt-get update && \
     sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
+# Make sure docker group exists and add coder user to it
+RUN if ! getent group docker > /dev/null; then \
+        sudo groupadd docker; \
+    fi && \
+    sudo usermod -aG docker coder
+
 # Clean up
 RUN sudo apt-get clean && \
     sudo rm -rf /var/lib/apt/lists/*
 
 # Create logs directory with proper permissions
-RUN sudo mkdir -p /var/log/docker && \
-    sudo chown -R coder:coder /var/log/docker
+RUN sudo mkdir -p "$HOME/docker_logs" && \
+    sudo chown -R coder:coder "$HOME/docker_logs"
 
 # Create startup script to run both Docker daemon and code-server
 COPY --chmod=755 start.sh /usr/local/bin/start.sh
