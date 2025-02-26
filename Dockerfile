@@ -27,6 +27,10 @@ RUN sudo install -m 0755 -d /etc/apt/keyrings && \
 RUN sudo apt-get clean && \
     sudo rm -rf /var/lib/apt/lists/*
 
+# Create logs directory with proper permissions
+RUN sudo mkdir -p /var/log/docker && \
+    sudo chown -R coder:coder /var/log/docker
+
 # Create startup script to run both Docker daemon and code-server
 COPY --chmod=755 start.sh /usr/local/bin/start.sh
 
